@@ -82,9 +82,8 @@ def train_model(model, train_data, train_labels, val_data, val_labels):
 
 
 def main():
-    # Directorios proporcionados por SageMaker
-    input_dir = '/opt/ml/input/data/training'  # Ruta a los datos de entrenamiento y validación
-    #output_dir = '/opt/ml/model'  # Ruta donde se guardará el modelo entrenado
+    input_dir = '/opt/ml/input/data/training'  # Ruta proporcionada por SageMaker
+    output_dir = '/opt/ml/model'  # Ruta donde se guardará el modelo
 
     # Cargar datos de entrenamiento y validación
     (train_data, train_labels), (val_data, val_labels) = load_data(input_dir)
