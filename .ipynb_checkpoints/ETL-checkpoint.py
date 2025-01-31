@@ -166,5 +166,5 @@ def create_data(size_frame):
 if __name__ == "__main__":
     #create_spark_sesion()
     #spark_sesion(
-    df = obtain_complete_data(size_frame=21)
+    df = obtain_complete_data(size_frame=31)
 
