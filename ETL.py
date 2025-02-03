@@ -20,35 +20,6 @@ def spark_sesion():
     spark = SparkSession.builder.appName("PipelineExample").getOrCreate()
     return spark
 
-def create_spark_sesion():
-    os.environ['PYSPARK_PYTHON'] = "C:/Users/52669/anaconda3/envs/awsEmg/python.exe"
-    os.environ['PYSPARK_DRIVER_PYTHON'] = "C:/Users/52669/anaconda3/envs/awsEmg/python.exe"
-    os.environ['HADOOP_HOME'] = 'C:/Users/52669/Documents/spark/spark-3.5.4-bin-hadoop3'
-    os.environ['PATH'] += ';' + os.path.join(os.environ['HADOOP_HOME'], 'bin')
-
-    # Archivos JAR con las rutas corregidas
-    aws_sdk_jar = "file:///C:/Users/52669/Documents/spark/spark-3.5.4-bin-hadoop3/aws-java-sdk-1.12.780.jar"
-    hadoop_aws_jar = "file:///C:/Users/52669/Documents/spark/spark-3.5.4-bin-hadoop3/hadoop-aws-3.3.0.jar"
-    guava_jar = "file:///C:/Users/52669/Documents/spark/spark-3.5.4-bin-hadoop3/jars/guava-33.4.0-jre.jar"
-
-    spark = SparkSession.builder \
-        .appName("MiAplicacionSpark") \
-        .config("spark.hadoop.fs.s3a.endpoint", "s3.amazonaws.com") \
-        .config("spark.hadoop.fs.s3a.region", "us-west-2") \
-        .config("spark.hadoop.fs.s3a.impl", "org.apache.hadoop.fs.s3a.S3AFileSystem") \
-        .config("spark.hadoop.fs.s3a.connection.ssl.enabled", "true") \
-        .getOrCreate()
-
-    print("hasta aqui 2 ")
-    data = [("Alice", 1), ("Bob", 2), ("Charlie", 3)]
-    columns = ["name", "value"]
-    df = spark.createDataFrame(data, columns)
-    print("hasta aqui 3")
-    # Escribe en S3
-    df.write.parquet("s3a://emgninapro/")
-    print("jasta")
-    return spark
-
 
 def obtain_complete_data(size_frame=31):
     s3 = boto3.client('s3')
@@ -64,7 +35,7 @@ def obtain_complete_data(size_frame=31):
 
     if file_exists:
         try:
-            print("Archivo si existe")
+            print("File exist")
             s3_object_existing = s3.get_object(Bucket=bucket, Key=output_file)
             existing_data = pd.read_csv(s3_object_existing['Body'])
             print(type(existing_data))
@@ -147,14 +118,13 @@ def create_data(size_frame):
         file_exists = False
 
     if file_exists:
-        # Leer el archivo CSV existente en S3
+
         s3_object_existing = s3.get_object(Bucket=bucket, Key=output_file)
         existing_data = pd.read_csv(s3_object_existing['Body'])
 
-        # Concatenar los datos nuevos con los existentes
         df = pd.concat([existing_data, df], ignore_index=True)
 
-    # **Subir el archivo actualizado a S3**
+
     csv_buffer = io.StringIO()
     df.to_csv(csv_buffer, index=False)
     s3.put_object(Bucket=bucket, Key=output_file, Body=csv_buffer.getvalue())
