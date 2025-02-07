@@ -58,6 +58,8 @@ def load_data(frame_size, input_dir=None, df=None):
 
     idx = np.random.permutation(len(val_data))
     val_data, val_labels = val_data[idx], val_labels[idx]
+    print(f"Size of training data:{train_data.shape}")
+    print(f"Size of Validation data {val_data.shape}")
 
     return (train_data, train_labels), (val_data, val_labels)
 
@@ -83,10 +85,10 @@ def create_model():
     return model
 
 
-def train_model(model, train_data, train_labels, val_data, val_labels):
+def train_model(model, train_data, train_labels, val_data, val_labels,epoch=800,batch_size=64):
     model.fit(x=train_data, y=train_labels,
-              epochs=800,
-              batch_size=64,
+              epochs=epoch,
+              batch_size=batch_size,
               validation_data=(val_data, val_labels))
 
 
