@@ -110,6 +110,6 @@ def main(df=None, input_dir=None,frame_size=81):
     return model
 
 if __name__ == "__main__":
-    model = main(frame_size=101)
+    model = main(frame_size=81)
 
 

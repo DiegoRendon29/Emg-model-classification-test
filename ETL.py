@@ -1,3 +1,6 @@
+import time
+import h5py
+
 import boto3
 import json
 import math
@@ -130,11 +133,95 @@ def create_data(size_frame):
     s3.put_object(Bucket=bucket, Key=output_file, Body=csv_buffer.getvalue())
 
 
+def create_spectral_data(size_frame):
+    s3 = boto3.client('s3')
+    bucket = "emgninapro"
+    prefix_raw = "data/RawData/"
+    response = s3.list_objects_v2(Bucket=bucket, Prefix=prefix_raw)
+    output_file = f'data/complete_data/spectral_data_frame{size_frame}.h5'
+    mtx = 0
+    if 'Contents' in response:
+        print(f'Files in folder "{prefix_raw}":')
+
+        for obj in response['Contents']:
+            key = obj['Key']
+            if key.endswith('.mat'):
+                print(f'File : - {obj["Key"]} (Size: {obj["Size"]} bytes)')
+
+                # Leer el archivo desde S3
+                file_object = s3.get_object(Bucket=bucket, Key=key)
+                file_data = file_object['Body'].read()
+                file_stream = io.BytesIO(file_data)
+                df_temp = scipy.io.loadmat(file_stream, appendmat=False)
+
+                emg = df_temp['emg']
+                stimulus = df_temp['restimulus']
+                stimulus_index = np.where(stimulus != 0)[0]
+                ends = np.where(np.diff(stimulus_index) != 1)[0]
+                starts = np.insert(ends + 1, 0, 1)
+                ends = np.append(ends, len(stimulus_index) - 1)
+
+                for i in range(len(starts)):
+                    mov_data = Movement(
+                        emg=emg[stimulus_index[starts[i]]:stimulus_index[ends[i]], :],
+                        subject=df_temp['subject'],
+                        exercise=df_temp['exercise'],
+                        movement=stimulus[stimulus_index[starts[i]]]
+                    )
+                    data_extracted = mov_data.create_windowsSpect(size=size_frame,hop=20)
+
+                    with h5py.File(output_file, "a") as f:
+                        for spect in data_extracted:
+
+                            dt_spect = f.create_dataset(f"matriz{mtx}", data=spect)
+                            dt_spect.attrs["subject"] = mov_data.subject
+                            dt_spect.attrs["repetition"] = i % 10
+                            dt_spect.attrs["movement"] = mov_data.totalMov
+                            mtx = mtx + 1
+
+    print(spect.shape)
+    s3.upload_file(output_file, bucket, output_file)
+
+
+def obtain_spectral_data(size_frame):
+    s3 = boto3.client('s3')
+    bucket = "emgninapro"
+
+    output_file = f'data/complete_data/spectral_data_frame{size_frame}.h5'
+
+    if os.path.exists(output_file):
+        print("File Alredy locally, returning location.")
+    else:
+        print("File do not exist locally, trying to download.")
+        try:
+
+            s3.head_object(Bucket=bucket, Key=output_file)
+            print("File exist in s3")
+            file_exists = True
+        except ClientError:
+            file_exists = False
+        if file_exists:
+            try:
+                #s3_object_existing = s3.get_object(Bucket=bucket, Key=output_file)
+                #existing_data = pd.read_csv(s3_object_existing['Body'])
+                print("downloading...")
+                s3.download_file(bucket, output_file, output_file)
+                print(f"File donwloaded in:{output_file}")
+                return output_file
+            except ClientError as e:
+                print(f"Error: {e}")
+                return None
+        else:
+
+            print("File do not exist in s3, creating it...")
+            create_spectral_data(size_frame=size_frame)
+            return obtain_complete_data(size_frame)
+    return output_file
 
 
 
 if __name__ == "__main__":
     #create_spark_sesion()
     #spark_sesion(
-    df = obtain_complete_data(size_frame=21)
+    create_spectral_data(size_frame=31)
 

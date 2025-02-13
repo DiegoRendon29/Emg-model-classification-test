@@ -2,13 +2,19 @@ import math
 import numpy as np
 import scipy
 import librosa
+import matplotlib
+import matplotlib.pyplot as plt
+import seaborn as sns
+import time
+from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
+matplotlib.use("TkAgg")
 # Main Class where stores a move, the processing is made here
 class Movement:
     def __init__(self, emg, subject, exercise, movement):
         self.ExcerMovs = [12, 17, 23]
         self.emg = emg
         self.fs = 100
-        self.nfft = 86
+        self.nfft = 32
         self.nmels = 24
         self.hop = 3
         self.subject = subject[0][0]
@@ -22,21 +28,42 @@ class Movement:
         spectrogram = librosa.feature.melspectrogram(y=signal, sr=self.fs,
                                                      n_fft=self.nfft, n_mels=self.nmels, hop_length=self.hop)
         sxx = librosa.power_to_db(spectrogram)
-
         return sxx
 
-    def create_windowsSpect(self, size, hop, signal):
+
+    def create_windowsSpect(self, size, hop,data_form ="combined"):
         windows = []
+        signal = self.emg
         for i in range(size, len(signal), hop):
+            spect_window_upp = np.array([])
+            spect_window_bott = np.array([])
             spect_window = np.array([])
             for ch in range(signal.shape[1]):
                 window = signal[(i-size):i, ch]
                 window_spectro = self.create_spectrogram(window)
-                if spect_window.shape[0] == 0:
-                    spect_window = window_spectro
-                else:
-                    spect_window = np.dstack((spect_window,window_spectro))
-            windows.append(spect_window)
+                if data_form == "stacked":
+                    if spect_window.shape[0] ==0:
+                        spect_window = window_spectro
+                    else:
+                        spect_window = np.dstack((spect_window, window_spectro))
+                if data_form == "combined":
+                    if ch <= 4:
+                        if spect_window_upp.shape[0] == 0:
+                            spect_window_upp = window_spectro
+                        else:
+                            spect_window_upp = np.concatenate((spect_window_upp,window_spectro), axis=1)
+                    else:
+                        if spect_window_bott.shape[0] == 0:
+                            spect_window_bott = window_spectro
+                        else:
+                            spect_window_bott = np.concatenate((spect_window_bott,window_spectro), axis=1)
+
+            if data_form == "combined":
+                spectro_combined = np.concatenate((spect_window_upp,spect_window_bott),axis=0)
+                windows.append(spectro_combined)
+            else:
+                windows.append(spect_window)
+
         return windows
 
     def create_parameters(self, size, hop):

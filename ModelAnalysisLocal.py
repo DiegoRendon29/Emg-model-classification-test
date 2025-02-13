@@ -2,6 +2,7 @@ import tensorflow as tf
 import os
 import shap
 from TrainingModelLocally import load_data
+from TrainingModelLocally import main
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib
@@ -75,9 +76,10 @@ def creation_confusion(model, frame_size):
 
     plt.show()
 if __name__ == "__main__":
-    model_name = "ModelFrameSize61.h5"
+    #main(frame_size=81)
+    model_name = "ModelFrameSize81.h5"
     model = read_model(model_name)
     print(model.input_shape)
-    #analysis_shap(model,61)
-    creation_confusion(model,31)
+    analysis_shap(model,81)
+    #creation_confusion(model,31)
 
